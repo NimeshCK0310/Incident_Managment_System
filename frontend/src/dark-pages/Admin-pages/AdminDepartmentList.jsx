@@ -26,7 +26,7 @@ const AdminDepartmentList = () => {
   useEffect(() => {
     const fetchDepartments = async () => {
       try {
-        const response = await axios.get("http://localhost:5000/api/departments");
+        const response = await axios.get("REACT_APP_BASE_URL/api/departments");
         setDepartments(response.data);
       } catch (error) {
         console.error("Error fetching departments:", error);
@@ -60,7 +60,7 @@ const AdminDepartmentList = () => {
   const goToLastPage = () => setCurrentPage(totalPages);
   const handleDelete = async (id) => {
     try {
-      await axios.delete(`http://localhost:5000/api/departments/${id}`);
+      await axios.delete(`REACT_APP_BASE_URL/api/departments/${id}`);
       fetchDepartments(); // Refresh data after deletion
     } catch (error) {
       console.error("Error deleting department:", error);

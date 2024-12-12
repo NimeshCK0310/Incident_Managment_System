@@ -15,7 +15,7 @@ export const LoginReportedIncidentPage = () => {
     const fetchData = async () => {
       try {
         // Replace with your API endpoint or method to fetch the previous data
-        const response = await fetch('http://localhost:5000/api/incidents'); // Example API endpoint
+        const response = await fetch('REACT_APP_BASE_URL/api/incidents'); // Example API endpoint
         const data = await response.json();
         setIncidents(data);
       } catch (error) {

@@ -21,7 +21,7 @@ const AdminEmployeeList = () => {
     const fetchEmployees = async () => {
       setLoading(true); // Set loading to true before fetching
       try {
-        const response = await fetch("http://localhost:5000/api/employees");
+        const response = await fetch("REACT_APP_BASE_URLapi/employees");
         if (!response.ok) {
           throw new Error("Failed to fetch employees");
         }
@@ -68,7 +68,7 @@ const AdminEmployeeList = () => {
 
   const handleConfirmDelete = async () => {
     try {
-      const response = await fetch(`http://localhost:5000/api/employees/${employeeToDelete}`, {
+      const response = await fetch(`REACT_APP_BASE_URL/api/employees/${employeeToDelete}`, {
         method: "DELETE",
       });
       if (!response.ok) {
