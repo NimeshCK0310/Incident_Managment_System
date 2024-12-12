@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import AdminSidebar from "./AdminSidebar";
 import AdminNavbar from "./AdminNavbar";
@@ -10,22 +10,36 @@ const AdminEmployeeList = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [employeeToDelete, setEmployeeToDelete] = useState(null);
+  const [employees, setEmployees] = useState([]); // State for employee data
+  const [loading, setLoading] = useState(false); // Loading state
+  const [error, setError] = useState(null); // Error state
 
   const navigate = useNavigate();
 
-  const employees = [
-    { id: "001", name: "John Doe", email: "John@gmail.com", phone: "123-456-7890", department: "IT" },
-    { id: "002", name: "Jane Smith", email: "Jane@gmail.com", phone: "987-654-3210", department: "HR" },
-    { id: "003", name: "Alice Johnson", email: "Alice@gmail.com", phone: "555-123-4567", department: "Finance" },
-    { id: "004", name: "Bob Brown", email: "Bob@gmail.com", phone: "111-222-3333", department: "Marketing" },
-    { id: "005", name: "Charlie Green", email: "Charlie@gmail.com", phone: "444-555-6666", department: "Operations" },
-    { id: "006", name: "David Blue", email: "David@gmail.com", phone: "777-888-9999", department: "Sales" },
-    { id: "007", name: "Eva White", email: "Eva@gmail.com", phone: "111-333-5555", department: "Support" },
-    { id: "008", name: "George Black", email: "George@gmail.com", phone: "666-777-8888", department: "Legal" },
-  ];
+  // Fetch employees from the backend when the component mounts
+  useEffect(() => {
+    const fetchEmployees = async () => {
+      setLoading(true); // Set loading to true before fetching
+      try {
+        const response = await fetch("http://localhost:5000/api/employees");
+        if (!response.ok) {
+          throw new Error("Failed to fetch employees");
+        }
+        const data = await response.json();
+        setEmployees(data); // Set fetched data into state
+      } catch (error) {
+        setError(error.message); // Set error message if fetching fails
+        console.error("Error fetching data: ", error);
+      } finally {
+        setLoading(false); // Stop loading once the fetch is done
+      }
+    };
 
+    fetchEmployees();
+  }, []);
+
+  // Filter employees based on the search query
   const filteredEmployees = employees.filter((employee) =>
-    employee.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
     employee.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -52,10 +66,23 @@ const AdminEmployeeList = () => {
     setEmployeeToDelete(null);
   };
 
-  const handleConfirmDelete = () => {
-    console.log(`Employee with ID: ${employeeToDelete} deleted.`);
-    setShowDeleteModal(false);
-    setEmployeeToDelete(null);
+  const handleConfirmDelete = async () => {
+    try {
+      const response = await fetch(`http://localhost:5000/api/employees/${employeeToDelete}`, {
+        method: "DELETE",
+      });
+      if (!response.ok) {
+        throw new Error("Failed to delete employee");
+      }
+      setEmployees((prevEmployees) =>
+        prevEmployees.filter((employee) => employee.id !== employeeToDelete)
+      ); // Update state after deletion
+      setShowDeleteModal(false);
+      setEmployeeToDelete(null);
+    } catch (error) {
+      console.error(error);
+      alert("There was an error deleting the employee.");
+    }
   };
 
   const handleEdit = (id) => {
@@ -100,60 +127,66 @@ const AdminEmployeeList = () => {
             />
           </div>
 
-          <div className="overflow-x-auto bg-gray-800 p-4 rounded-lg shadow-md mb-6">
-            <table className="min-w-full table-auto text-left text-sm">
-              <thead>
-                <tr className="border-b border-gray-700">
-                  <th className="px-4 py-2 text-green-500">Employee ID</th>
-                  <th className="px-4 py-2 text-green-500">Name</th>
-                  <th className="px-4 py-2 text-green-500">Email</th>
-                  <th className="px-4 py-2 text-green-500">Tel. No</th>
-                  <th className="px-4 py-2 text-green-500">Department</th>
-                  <th className="px-4 py-2 text-green-500">Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {displayedEmployees.map((employee) => (
-                  <tr key={employee.id} className="border-b border-gray-700 hover:bg-gray-700">
-                    <td className="px-4 py-2">{employee.id}</td>
-                    <td className="px-4 py-2">{employee.name}</td>
-                    <td className="px-4 py-2">{employee.email}</td>
-                    <td className="px-4 py-2">{employee.phone}</td>
-                    <td className="px-4 py-2">{employee.department}</td>
-                    <td className="px-4 py-2 flex space-x-2">
-                      <button onClick={() => handleEdit(employee.id)} className="text-blue-500">
-                        <Edit className="h-5 w-5" />
-                      </button>
-                      <button onClick={() => handleDeleteClick(employee.id)} className="text-red-500">
-                        <Trash2 className="h-5 w-5" />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          {loading ? (
+            <div className="text-center text-white">Loading...</div>
+          ) : error ? (
+            <div className="text-center text-red-500">Error: {error}</div>
+          ) : (
+            <>
+              <div className="overflow-x-auto bg-gray-800 p-4 rounded-lg shadow-md mb-6">
+                <table className="min-w-full table-auto text-left text-sm">
+                  <thead>
+                    <tr className="border-b border-gray-700">
+                      <th className="px-4 py-2 text-green-500">Name</th>
+                      <th className="px-4 py-2 text-green-500">Email</th>
+                      <th className="px-4 py-2 text-green-500">Tel. No</th>
+                      <th className="px-4 py-2 text-green-500">Department</th>
+                      <th className="px-4 py-2 text-green-500">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {displayedEmployees.map((employee) => (
+                      <tr key={employee.id} className="border-b border-gray-700 hover:bg-gray-700">
+                        <td className="px-4 py-2">{employee.name}</td>
+                        <td className="px-4 py-2">{employee.email}</td>
+                        <td className="px-4 py-2">{employee.phone}</td>
+                        <td className="px-4 py-2">{employee.department}</td>
+                        <td className="px-4 py-2 flex space-x-2">
+                          <button onClick={() => handleEdit(employee.id)} className="text-blue-500">
+                            <Edit className="h-5 w-5" />
+                          </button>
+                          <button onClick={() => handleDeleteClick(employee.id)} className="text-red-500">
+                            <Trash2 className="h-5 w-5" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
 
-          <div className="mt-4 flex flex-col sm:flex-row justify-between items-center">
-            <div className="text-sm sm:text-base text-center sm:text-left">
-              Showing {displayedEmployees.length} of {totalEntries} entries
-            </div>
-            <div className="flex space-x-2">
-              <button onClick={goToFirstPage} disabled={currentPage === 1} className="border p-2 rounded">
-                <ChevronsLeft className="h-4 w-4" />
-              </button>
-              <button onClick={goToPreviousPage} disabled={currentPage === 1} className="border p-2 rounded">
-                <ChevronLeft className="h-4 w-4" />
-              </button>
-              <span className="p-2">{currentPage} of {totalPages}</span>
-              <button onClick={goToNextPage} disabled={currentPage === totalPages} className="border p-2 rounded">
-                <ChevronRight className="h-4 w-4" />
-              </button>
-              <button onClick={goToLastPage} disabled={currentPage === totalPages} className="border p-2 rounded">
-                <ChevronsRight className="h-4 w-4" />
-              </button>
-            </div>
-          </div>
+              <div className="mt-4 flex flex-col sm:flex-row justify-between items-center">
+                <div className="text-sm sm:text-base text-center sm:text-left">
+                  Showing {displayedEmployees.length} of {totalEntries} entries
+                </div>
+                <div className="flex space-x-2">
+                  <button onClick={goToFirstPage} disabled={currentPage === 1} className="border p-2 rounded">
+                    <ChevronsLeft className="h-4 w-4" />
+                  </button>
+                  <button onClick={goToPreviousPage} disabled={currentPage === 1} className="border p-2 rounded">
+                    <ChevronLeft className="h-4 w-4" />
+                  </button>
+                  <span className="p-2">{currentPage} of {totalPages}</span>
+                  <button onClick={goToNextPage} disabled={currentPage === totalPages} className="border p-2 rounded">
+                    <ChevronRight className="h-4 w-4" />
+                  </button>
+                  <button onClick={goToLastPage} disabled={currentPage === totalPages} className="border p-2 rounded">
+                    <ChevronsRight className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
         </main>
       </div>
 
